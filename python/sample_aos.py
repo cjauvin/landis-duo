@@ -1,3 +1,4 @@
+from __future__ import division
 import re, os, random, argparse
 from collections import OrderedDict, defaultdict
 
@@ -26,14 +27,26 @@ for line in open(args.aos_file):
 try: os.mkdir(args.out_dir) # create subdir (if it doesn't exist)
 except: pass
 
+# species -> ecoregion -> list of n samples (one in each bin)
+values = defaultdict(lambda: defaultdict(list))
+ecoregions = next(params.itervalues()).keys()
+
+for i in range(args.n):
+    for species in params:
+        for ecoregion, vals in params[species].items():
+            size = (vals[1] - vals[0]) / args.n
+            values[species][ecoregion].append(str(random.uniform(size * i, size * (i + 1))))
+
+for i in range(args.n):
+    for species in params:
+        for ecoregion, vals in params[species].items():
+            random.shuffle(values[species][ecoregion])
+
 for i in range(args.n):
     fout = open('%s/aos_%s.txt' % (args.out_dir, i), 'w')
     fout.write('\n'.join(header))
-    values = defaultdict(list) # species -> list of values
-    for species in params:
-        for ecoregion, vals in params[species].items():
-            values[species].append(str(random.uniform(vals[0], vals[1])))
-    fout.write('\t'.join([''] + next(params.itervalues()).keys()) + '\n')
+    fout.write('\t'.join([''] + ecoregions) + '\n')
     for species in params.keys():
-        fout.write('\t'.join([species] + values[species]) + '\n')
+        row = [species] + [values[species][er][i] for er in ecoregions]
+        fout.write('\t'.join(row) + '\n')
     fout.close()
