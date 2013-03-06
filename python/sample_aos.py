@@ -31,16 +31,12 @@ except: pass
 values = defaultdict(lambda: defaultdict(list))
 ecoregions = next(params.itervalues()).keys()
 
-for i in range(args.n):
-    for species in params:
-        for ecoregion, vals in params[species].items():
-            size = (vals[1] - vals[0]) / args.n
-            values[species][ecoregion].append(str(random.uniform(size * i, size * (i + 1))))
-
-for i in range(args.n):
-    for species in params:
-        for ecoregion, vals in params[species].items():
-            random.shuffle(values[species][ecoregion])
+for species in params:
+    for ecoregion, vals in params[species].items():
+        size = (vals[1] - vals[0]) / args.n
+        samples = [str(random.uniform(size * i, size * (i + 1))) for i in range(args.n)]
+        random.shuffle(samples)
+        values[species][ecoregion] = samples
 
 for i in range(args.n):
     fout = open('%s/aos_%s.txt' % (args.out_dir, i), 'w')
