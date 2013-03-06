@@ -28,7 +28,7 @@ try: os.mkdir(args.out_dir) # create subdir (if it doesn't exist)
 except: pass
 
 # species -> ecoregion -> list of n samples (one in each bin)
-values = defaultdict(lambda: defaultdict(list))
+values = defaultdict(dict)
 ecoregions = next(params.itervalues()).keys()
 
 for species in params:
