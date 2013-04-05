@@ -22,7 +22,7 @@ for line in open(args.aos_file):
     species, ecoregion, min_val, max_val = [parts[i] for i in [1, 2, -6, -5]]
     params.setdefault(species, OrderedDict())
     params[species][ecoregion] = [float(min_val), float(max_val)]
-    assert params[species][ecoregion][0] < params[species][ecoregion][1]
+    assert params[species][ecoregion][0] <= params[species][ecoregion][1]
 
 try: os.mkdir(args.out_dir) # create subdir (if it doesn't exist)
 except: pass
@@ -34,9 +34,11 @@ ecoregions = next(params.itervalues()).keys()
 for species in params:
     for ecoregion, vals in params[species].items():
         size = (vals[1] - vals[0]) / args.n
-        samples = [str(random.uniform(size * i, size * (i + 1))) for i in range(args.n)]
+        samples = [str(round(random.uniform(vals[0] + size * i, vals[0] + size * (i + 1)), 2)) for i in range(args.n)]
+        print species, ecoregion, vals, samples
         random.shuffle(samples)
         values[species][ecoregion] = samples
+        print '------'
 
 for i in range(args.n):
     fout = open('%s/aos_%s.txt' % (args.out_dir, i), 'w')
