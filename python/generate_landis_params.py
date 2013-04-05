@@ -2,38 +2,48 @@ from __future__ import division
 import re, os, random, argparse
 from collections import OrderedDict, defaultdict
 
-R = 1
-M = 1
+R = 3
+M = 25
 
-loc = 'sims_n=216'
+#loc = 'sims_n=216'
+loc = 'sims_n=4536'
 
 os.system('rm -fr %s' % loc)
 os.mkdir(loc)
+
+aos_header = """LandisData  "Age-only Succession"
+
+Timestep  10
+
+SeedingAlgorithm  WardSeedDispersal
+
+InitialCommunities      "../initial-communities.txt"
+InitialCommunitiesMap   "../initial-communities.img"
+
+EstablishProbabilities
+
+>>>  mean values after preliminary survey
+>> Species        Ecoregions
+>> --------       ------------------
+""".replace('\n', '\r\n')
 
 # species -> ecoregion -> [min, max]
 params = OrderedDict() # OD because we need to keep keys in order
 header = [] # top part (i.e. non-table) of file
 
-for line in open('../EstablishProbabilities_PGInputs.csv'):
-    line = line.strip()
-    if not line: continue
-    if len(line.split('\t')) == 14:
-        ecoregions = line.split('\t')[1:]
-        continue
+f = open('../EstablishProbabilities_PGInputs.csv')
+cols = f.readline().split(',')
+
+for line in f:
     parts = line.split(',')
-    if len(parts) != 26:
-        header.append(line.strip())
-        continue
-    if not re.match('\d+', parts[0]):
-        cols = parts
-        continue
     values = dict(zip(cols, parts))
     species, ecoregion = values['species'], values['ecoregion']
-    params.setdefault(species, {})
+    params.setdefault(species, OrderedDict())
     params[species][ecoregion] = [float(values[c]) for c in ['min', 'max', 'ccMin', 'ccMax']]
     assert params[species][ecoregion][0] <= params[species][ecoregion][1]
     assert params[species][ecoregion][2] <= params[species][ecoregion][3]
 
+ecoregions = next(params.itervalues()).keys()
 
 def copy_files(n, bf, bw, sp):
     os.system('cp ../scenario.txt %s/%s/' % (loc, n))
@@ -71,11 +81,11 @@ for bf in ['hff-bs', 'hff-fs', 'lff-fs']:
                     for m in range(M):
                         os.mkdir('%s/%s' % (loc, n))
                         fout = open('%s/%s/age-only-succession.txt' % (loc, n), 'w')
-                        fout.write('\n'.join(header))
-                        fout.write('\n' + '\t'.join([''] + ecoregions) + '\n')
+                        fout.write(aos_header)
+                        fout.write('\t'.join([''] + ecoregions) + '\r\n')
                         for species in params.keys():
                             row = [species] + [values[species][er][cc_idx][m] for er in ecoregions]
-                            fout.write('\t'.join(row) + '\n')
+                            fout.write('\t'.join(row) + '\r\n')
                         fout.close()
                         copy_files(n, bf, bw, sp)
                         exp_map.append([n, bf, bw, sp, m, cc_idx, r])
@@ -90,9 +100,9 @@ for bf in ['hff-bs', 'hff-fs', 'lff-fs']:
                     n += 1
 
 f = open('%s_infos.csv' % loc, 'w')
-f.write(','.join(['i', 'base-fire', 'base-wind', 'species', 'm', 'cc', 'r']) + '\n')
+f.write(','.join(['i', 'base-fire', 'base-wind', 'species', 'm', 'cc', 'r']) + '\r\n')
 for row in exp_map:
-    f.write(','.join([str(v) for v in row]) + '\n')
+    f.write(','.join([str(v) for v in row]) + '\r\n')
 f.close()
 
 print n
